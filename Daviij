@@ -1,0 +1,55 @@
+{
+  "name": "minecraft-bot-davi",
+  "version": "1.0.0",
+  "main": "bot.js",
+  "dependencies": {
+    "mineflayer": "^4.4.0",
+    "mineflayer-pathfinder": "^1.0.0",
+    "minecraft-data": "^2.73.0"
+  }
+}const mineflayer = require('mineflayer');
+const { pathfinder, Movements, goals } = require('mineflayer-pathfinder');
+
+function createBot() {
+  const bot = mineflayer.createBot({
+    host: 'SEU_IP_AQUI',       // IP do servidor (ex: davimc.aternos.me)
+    port: 25565,               // Porta padrão do Minecraft
+    username: 'DaviBot',       // Nome do bot (pode trocar)
+    version: '1.21.4'          // Versão do seu servidor
+  });
+
+  bot.loadPlugin(pathfinder);
+
+  bot.once('spawn', () => {
+    const mcData = require('minecraft-data')(bot.version);
+    const movements = new Movements(bot, mcData);
+    bot.pathfinder.setMovements(movements);
+
+    bot.chat('Oi! Sou o DaviBot 🤖');
+
+    // O bot segue você quando você digita "seguir" no chat
+    bot.on('chat', (username, message) => {
+      if (message === 'seguir') {
+        const player = bot.players[username];
+        if (!player || !player.entity) {
+          bot.chat("Não consigo te ver no mundo 😕");
+          return;
+        }
+        const goal = new goals.GoalFollow(player.entity, 1);
+        bot.pathfinder.setGoal(goal, true);
+        bot.chat(`Ok ${username}, tô te seguindo!`);
+      }
+    });
+  });
+
+  bot.on('error', err => {
+    console.log('Erro do bot:', err);
+  });
+
+  bot.on('end', () => {
+    console.log('Bot caiu. Tentando reconectar...');
+    setTimeout(createBot, 5000); // tenta reconectar depois de 5s
+  });
+}
+
+createBot();
